@@ -1,0 +1,10 @@
+import torch
+yolov5_model = torch.hub.load('ultralytics/yolov5', 'yolov5s', pretrained=True)
+
+def detect_fish(image):
+    results = yolov5_model(image)
+    detected = results.pandas().xyxy[0]
+    fish_boxes = detected[detected['name'] == 'fish']
+    if len(fish_boxes) > 0:
+        return fish_boxes.iloc[0]  # ambil satu deteksi ikan pertama
+    return None
