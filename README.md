@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # App Starter Project with Webpack
 
 Proyek ini adalah setup dasar untuk aplikasi web yang menggunakan webpack untuk proses bundling, Babel untuk transpile JavaScript, serta mendukung proses build dan serving aplikasi.
@@ -66,3 +67,7 @@ starter-project/
 ├── webpack.dev.js          # Webpack development configuration
 └── webpack.prod.js         # Webpack production configuration
 ```
+=======
+# segarikan-capstone
+tugas akhir proyek casptone dbs coding campe 2025
+>>>>>>> b5e509e220a63cdd9313ed652713fe20a908d72b
