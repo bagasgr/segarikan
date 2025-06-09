@@ -5,11 +5,12 @@ import numpy as np
 from PIL import Image
 import io
 import base64
-import json
-import os
 
 app = Flask(__name__)
 CORS(app, supports_credentials=True, resources={r"/*": {"origins": "*"}})
+
+# Simpan user sementara di memori (tidak pakai file JSON)
+registered_users = []
 
 # Load model-model
 model1 = tf.keras.models.load_model('model/model_cek_ikan.h5')
@@ -108,7 +109,7 @@ def save_story():
 
         response = {
             "status": "success",
-            "message": "Data berhasil disimpan",
+            "message": "Data berhasil disimpan (tanpa file)",
             "data": {
                 "imageData": f"{image_data[:30]}...",
                 "result": result,
@@ -129,7 +130,6 @@ def get_history():
     ]
     return jsonify(history_data)
 
-# ✅ Tambahkan endpoint ini untuk handle registrasi
 @app.route('/api/v1/register', methods=['POST', 'OPTIONS'])
 def register():
     if request.method == 'OPTIONS':
@@ -143,24 +143,14 @@ def register():
         if not full_name or not email or not password:
             return jsonify({"status": "error", "message": "Data tidak lengkap"}), 400
 
-        users_file = 'db.user.json'
-        if os.path.exists(users_file):
-            with open(users_file, 'r') as f:
-                users = json.load(f)
-        else:
-            users = []
-
-        if any(user["email"] == email for user in users):
+        if any(user["email"] == email for user in registered_users):
             return jsonify({"status": "error", "message": "Email sudah terdaftar"}), 409
 
-        users.append({
+        registered_users.append({
             "fullName": full_name,
             "email": email,
             "password": password
         })
-
-        with open(users_file, 'w') as f:
-            json.dump(users, f, indent=2)
 
         return jsonify({"status": "success", "message": "Registrasi berhasil"}), 201
     except Exception as e:
