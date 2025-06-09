@@ -1,3 +1,6 @@
+import CONFIG from '../../config.js';
+
+
 export default class RegisterPage {
   async render() {
     return `
@@ -80,8 +83,7 @@ export default class RegisterPage {
       }
 
       try {
-        // Kirim data registrasi ke API backend
-        const response = await fetch('http://localhost:9001/v1/register', {
+        const response = await fetch(`${CONFIG.BASE_URL}/v1/register`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -100,6 +102,7 @@ export default class RegisterPage {
         window.location.hash = '/login';
       } catch (error) {
         alert('Terjadi kesalahan saat registrasi, coba lagi.');
+        console.error('Register error:', error);
       }
     });
   }

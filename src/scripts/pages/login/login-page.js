@@ -1,4 +1,5 @@
 import { initDB, getUserByEmail } from '../../data/indexdb.js';
+import CONFIG from '../../config.js';
 
 export default class LoginPage {
   async render() {
@@ -41,13 +42,13 @@ export default class LoginPage {
       </section>
 
       <!-- Modal Notifikasi -->
-    <div id="notification-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
-      <div class="bg-white rounded-lg shadow-lg max-w-sm w-full p-6 text-center relative">
-        <button id="modal-close-btn" class="absolute top-3 right-3 text-gray-500 hover:text-gray-700 text-xl font-bold">&times;</button>
-        <p id="modal-message" class="text-gray-800 text-lg"></p>
-        <button id="modal-ok-btn" class="mt-6 bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition">OK</button>
+      <div id="notification-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
+        <div class="bg-white rounded-lg shadow-lg max-w-sm w-full p-6 text-center relative">
+          <button id="modal-close-btn" class="absolute top-3 right-3 text-gray-500 hover:text-gray-700 text-xl font-bold">&times;</button>
+          <p id="modal-message" class="text-gray-800 text-lg"></p>
+          <button id="modal-ok-btn" class="mt-6 bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition">OK</button>
+        </div>
       </div>
-    </div>
     `;
   }
 
@@ -104,7 +105,7 @@ export default class LoginPage {
       }
 
       try {
-        const response = await fetch('http://localhost:9001/v1/login', {
+        const response = await fetch(`${CONFIG.BASE_URL}/v1/login`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
