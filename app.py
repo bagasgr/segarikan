@@ -5,6 +5,8 @@ import numpy as np
 from PIL import Image
 import io
 import base64
+import json
+import os
 
 app = Flask(__name__)
 CORS(app, supports_credentials=True, resources={r"/*": {"origins": "*"}})
@@ -45,7 +47,6 @@ def home():
 def check_fish():
     if request.method == 'OPTIONS':
         return '', 200
-    
     try:
         data = request.get_json()
         image_data = data.get('image')
@@ -62,7 +63,6 @@ def check_fish():
 def check_freshness():
     if request.method == 'OPTIONS':
         return '', 200
-    
     try:
         data = request.get_json()
         image_data = data.get('image')
@@ -97,10 +97,8 @@ def predict():
 def save_story():
     if request.method == 'OPTIONS':
         return '', 200
-    
     try:
         data = request.get_json()
-
         image_data = data.get('imageData')
         result = data.get('result')
         created_at = data.get('createdAt')
@@ -108,26 +106,21 @@ def save_story():
         if not image_data or not result or not created_at:
             return jsonify({"status": "error", "message": "Data tidak lengkap"}), 400
 
-        # Contoh logika dummy (belum simpan ke DB)
         response = {
             "status": "success",
             "message": "Data berhasil disimpan",
             "data": {
-                "imageData": f"{image_data[:30]}...",  # tampilkan sebagian
+                "imageData": f"{image_data[:30]}...",
                 "result": result,
                 "createdAt": created_at
             }
         }
         return jsonify(response), 201
-    
-    
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
-    
-    
+
 @app.route('/api/history', methods=['GET'])
 def get_history():
-    # Contoh data dummy riwayat kesegaran ikan
     history_data = [
         {"freshness": "Segar", "actualFreshness": "Segar"},
         {"freshness": "Tidak Segar", "actualFreshness": "Tidak Segar"},
@@ -135,6 +128,43 @@ def get_history():
         {"freshness": "Segar", "actualFreshness": "Tidak Segar"},
     ]
     return jsonify(history_data)
+
+# ✅ Tambahkan endpoint ini untuk handle registrasi
+@app.route('/api/v1/register', methods=['POST', 'OPTIONS'])
+def register():
+    if request.method == 'OPTIONS':
+        return '', 200
+    try:
+        data = request.get_json()
+        full_name = data.get('fullName')
+        email = data.get('email')
+        password = data.get('password')
+
+        if not full_name or not email or not password:
+            return jsonify({"status": "error", "message": "Data tidak lengkap"}), 400
+
+        users_file = 'db.user.json'
+        if os.path.exists(users_file):
+            with open(users_file, 'r') as f:
+                users = json.load(f)
+        else:
+            users = []
+
+        if any(user["email"] == email for user in users):
+            return jsonify({"status": "error", "message": "Email sudah terdaftar"}), 409
+
+        users.append({
+            "fullName": full_name,
+            "email": email,
+            "password": password
+        })
+
+        with open(users_file, 'w') as f:
+            json.dump(users, f, indent=2)
+
+        return jsonify({"status": "success", "message": "Registrasi berhasil"}), 201
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=9000, debug=True)
