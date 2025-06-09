@@ -93,32 +93,22 @@ export default class HomePage {
   }
 
   async afterRender() {
-    // Ambil elemen tombol dan modal
     this.scanBtn = document.getElementById('scan-btn');
     this.modalCloseBtn = document.getElementById('modal-close-btn');
     this.modalOkBtn = document.getElementById('modal-ok-btn');
 
-    // Event listener untuk modal close
-    if (this.modalCloseBtn) {
-      this.modalCloseBtn.addEventListener('click', () => this.hideModal());
-    }
-    if (this.modalOkBtn) {
-      this.modalOkBtn.addEventListener('click', () => this.hideModal());
-    }
+    this.modalCloseBtn?.addEventListener('click', () => this.hideModal());
+    this.modalOkBtn?.addEventListener('click', () => this.hideModal());
 
-    // Event listener untuk tombol scan
-    if (this.scanBtn) {
-      this.scanBtn.addEventListener('click', () => {
-        const token = localStorage.getItem('token');
-        if (!token) {
-          this.showModal('Silakan login terlebih dahulu untuk menggunakan fitur scan.');
-        } else {
-          window.location.href = '#/scan';
-        }
-      });
-    }
+    this.scanBtn?.addEventListener('click', () => {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        this.showModal('Silakan login terlebih dahulu untuk menggunakan fitur scan.');
+      } else {
+        window.location.href = '#/scan';
+      }
+    });
 
-    // Inisialisasi DB dan load data chart
     await initDB();
     await this.loadChartData();
   }
@@ -130,78 +120,66 @@ export default class HomePage {
 
       let freshCountML = 0;
       let notFreshCountML = 0;
-
       let freshCountActual = 0;
       let notFreshCountActual = 0;
 
-      // Regex untuk mendeteksi kata dasar segar/fresh/baik/dsb dengan case insensitive
       const regexFresh = /\b(segar|fresh|baik|bagus|fresh sekali)\b/i;
 
-      localHistory.forEach(item => {
+      for (const item of localHistory) {
         // --- Machine Learning result ---
-        let freshnessRawML = '';
-        if (typeof item.freshness === 'string' && item.freshness.trim() !== '') {
-          freshnessRawML = item.freshness.toLowerCase().trim();
-        } else if (typeof item.result === 'string' && item.result.trim() !== '') {
-          freshnessRawML = item.result.toLowerCase().trim();
-        } else if (typeof item.freshness === 'boolean') {
-          freshnessRawML = item.freshness ? 'fresh' : 'not fresh';
-        } else {
-          freshnessRawML = '';
-        }
-        const isFreshML = regexFresh.test(freshnessRawML);
+        let freshnessML = 
+          typeof item.freshness === 'string' && item.freshness.trim() !== '' ? item.freshness.toLowerCase().trim() :
+          typeof item.result === 'string' && item.result.trim() !== '' ? item.result.toLowerCase().trim() :
+          typeof item.freshness === 'boolean' ? (item.freshness ? 'fresh' : 'not fresh') :
+          '';
+
+        regexFresh.lastIndex = 0; // reset regex state
+        const isFreshML = regexFresh.test(freshnessML);
         if (isFreshML) freshCountML++;
         else notFreshCountML++;
 
-        // --- Actual result (asumsi ada di properti actualFreshness atau actual) ---
-        let freshnessRawActual = '';
-        if (typeof item.actualFreshness === 'string' && item.actualFreshness.trim() !== '') {
-          freshnessRawActual = item.actualFreshness.toLowerCase().trim();
-        } else if (typeof item.actual === 'string' && item.actual.trim() !== '') {
-          freshnessRawActual = item.actual.toLowerCase().trim();
-        } else if (typeof item.actualFreshness === 'boolean') {
-          freshnessRawActual = item.actualFreshness ? 'fresh' : 'not fresh';
-        } else {
-          freshnessRawActual = '';
-        }
-        const isFreshActual = regexFresh.test(freshnessRawActual);
+        // --- Actual result ---
+        let freshnessActual =
+          typeof item.actualFreshness === 'string' && item.actualFreshness.trim() !== '' ? item.actualFreshness.toLowerCase().trim() :
+          typeof item.actual === 'string' && item.actual.trim() !== '' ? item.actual.toLowerCase().trim() :
+          typeof item.actualFreshness === 'boolean' ? (item.actualFreshness ? 'fresh' : 'not fresh') :
+          '';
+
+        regexFresh.lastIndex = 0;
+        const isFreshActual = regexFresh.test(freshnessActual);
         if (isFreshActual) freshCountActual++;
         else notFreshCountActual++;
-      });
+      }
 
-      // Hitung persentase ML
       const totalML = freshCountML + notFreshCountML;
+      const totalActual = freshCountActual + notFreshCountActual;
+
       const freshPercentML = totalML > 0 ? (freshCountML / totalML) * 100 : 0;
       const notFreshPercentML = totalML > 0 ? (notFreshCountML / totalML) * 100 : 0;
 
-      // Hitung persentase Actual
-      const totalActual = freshCountActual + notFreshCountActual;
       const freshPercentActual = totalActual > 0 ? (freshCountActual / totalActual) * 100 : 0;
       const notFreshPercentActual = totalActual > 0 ? (notFreshCountActual / totalActual) * 100 : 0;
 
-      // Render Chart ML dengan doughnut chart (seperti sebelumnya)
       this.renderChartML({
         fresh: freshPercentML,
         notFresh: notFreshPercentML,
       });
 
-      // Render Chart Actual dengan line chart (modifikasi sesuai permintaan)
       this.renderChartActual({
         fresh: freshPercentActual,
         notFresh: notFreshPercentActual,
       });
+
     } catch (error) {
       console.error('Error loadChartData:', error);
     }
   }
 
   renderChartML(data) {
-    const ctxML = document.getElementById('historyChartML').getContext('2d');
+    const ctxML = document.getElementById('historyChartML')?.getContext('2d');
+    if (!ctxML) return;
 
-    // Hapus chart sebelumnya jika ada
-    if (this.chartInstanceML) {
-      this.chartInstanceML.destroy();
-    }
+    this.chartInstanceML?.destroy();
 
     this.chartInstanceML = new Chart(ctxML, {
       type: 'doughnut',
@@ -223,102 +201,107 @@ export default class HomePage {
           },
           tooltip: {
             callbacks: {
-              label: function(context) {
-                return `${context.label}: ${context.parsed.toFixed(2)}%`;
-              }
-            }
-          },
-        },
-        cutout: '70%',
-      }
-    });
-  }
-
-  renderChartActual(data) {
-    const ctxActual = document.getElementById('historyChartActual').getContext('2d');
-
-    // Hapus chart sebelumnya jika ada
-    if (this.chartInstanceActual) {
-      this.chartInstanceActual.destroy();
-    }
-
-    // Karena kita ingin line chart dengan 2 titik data (fresh & not fresh)
-    // Saya akan buat label sederhana ["Tidak Segar", "Segar"] agar data terlihat naik turun
-
-    this.chartInstanceActual = new Chart(ctxActual, {
-      type: 'line',
-      data: {
-        labels: ['Tidak Segar', 'Segar'],
-        datasets: [{
-          label: 'Distribusi Aktual (%)',
-          data: [data.notFresh, data.fresh],
-          fill: false,
-          borderColor: '#3b82f6', // Biru cerah
-          backgroundColor: '#3b82f6',
-          tension: 0.4,
-          pointRadius: 6,
-          pointHoverRadius: 8,
-          pointBackgroundColor: '#2563eb',
-        }],
-      },
-      options: {
-        responsive: true,
-        scales: {
-          y: {
-            beginAtZero: true,
-            max: 100,
-            ticks: {
-              callback: function(value) {
-                return value + '%';
-              }
+              label: ctx => `${ctx.label}: ${ctx.parsed.toFixed(2)}%`,
             },
-            title: {
-              display: true,
-              text: 'Persentase (%)',
-              font: { size: 14, weight: 'bold' }
-            }
           },
-          x: {
-            title: {
-              display: true,
-              text: 'Kategori Kesegaran',
-              font: { size: 14, weight: 'bold' }
-            }
-          }
         },
-        plugins: {
-          legend: {
-            display: true,
-            position: 'bottom',
-            labels: {
-              font: { size: 14 }
-            }
-          },
-          tooltip: {
-            callbacks: {
-              label: function(context) {
-                return `${context.parsed.y.toFixed(2)}%`;
-              }
-            }
-          }
-        }
-      }
+        cutout: '60%',
+      },
     });
   }
+
+ renderChartActual(data) {
+  const ctxActual = document.getElementById('historyChartActual')?.getContext('2d');
+  if (!ctxActual) return;
+
+  this.chartInstanceActual?.destroy();
+
+  this.chartInstanceActual = new Chart(ctxActual, {
+    type: 'bar',
+    data: {
+      labels: ['Segar', 'Tidak Segar'],
+      datasets: [{
+        label: 'Persentase Kesegaran Aktual',
+        data: [data.fresh, data.notFresh],
+        backgroundColor: ['#3b82f6', '#ef4444'], // Biru cerah dan Merah
+        borderRadius: 10,
+        borderSkipped: false,
+      }],
+    },
+    options: {
+      responsive: true,
+      animation: {
+        duration: 1000,
+        easing: 'easeOutQuart',
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          max: 100,
+          ticks: {
+            callback: value => value + '%',
+            font: { size: 14, weight: 'bold' },
+            color: '#334155',
+          },
+          grid: {
+            color: '#e2e8f0',
+          },
+          title: {
+            display: true,
+            text: 'Persentase (%)',
+            color: '#334155',
+            font: { size: 16, weight: 'bold' },
+          }
+        },
+        x: {
+          ticks: {
+            font: { size: 14, weight: 'bold' },
+            color: '#334155',
+          },
+          grid: {
+            display: false,
+          },
+        }
+      },
+      plugins: {
+        legend: {
+          display: false,
+        },
+        tooltip: {
+          enabled: true,
+          backgroundColor: '#2563eb',
+          titleColor: '#fff',
+          bodyColor: '#fff',
+          callbacks: {
+            label: ctx => `${ctx.parsed.y.toFixed(2)}%`,
+          },
+        },
+        title: {
+          display: true,
+          text: 'Distribusi Kesegaran Aktual (Bar Chart)',
+          font: { size: 18, weight: 'bold' },
+          color: '#1e40af',
+          padding: { bottom: 20 },
+        },
+      },
+      cornerRadius: 10,
+    },
+  });
+}
+
 
   showModal(message) {
     const modal = document.getElementById('notification-modal');
-    const modalMessage = document.getElementById('modal-message');
-    if (modal && modalMessage) {
-      modalMessage.textContent = message;
+    const msgElem = document.getElementById('modal-message');
+
+    if (modal && msgElem) {
+      msgElem.textContent = message;
       modal.classList.remove('hidden');
     }
   }
 
   hideModal() {
     const modal = document.getElementById('notification-modal');
-    if (modal) {
-      modal.classList.add('hidden');
-    }
+    if (modal) modal.classList.add('hidden');
   }
 }

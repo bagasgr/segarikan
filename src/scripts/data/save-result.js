@@ -1,5 +1,7 @@
+// save-resul.js
 export async function saveHistoryToDB(data) {
   const token = localStorage.getItem('authToken');
+  console.log('Token dari localStorage:', token);
   if (!token) {
     console.error('Token tidak ditemukan. Silakan login dulu!');
     return;
@@ -10,20 +12,20 @@ export async function saveHistoryToDB(data) {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,  // <== PENTING: format harus Bearer + spasi + token
+        'Authorization': `Bearer ${token}`,  // <-- ini penting
       },
       body: JSON.stringify(data),
     });
 
     if (!response.ok) {
-      const errorRes = await response.json();
-      console.error('❌ Gagal kirim data ke API:', response.status, errorRes);
-      return;
+      const errorData = await response.json();
+      throw new Error(`Gagal menyimpan data: ${errorData.message || response.statusText}`);
     }
 
-    const resJson = await response.json();
-    console.log('✅ Data berhasil dikirim:', resJson);
+    const result = await response.json();
+    console.log('Data berhasil disimpan:', result);
+    return result;
   } catch (error) {
-    console.error('❌ Error saat kirim data:', error);
+    console.error('Error saat menyimpan data:', error.message);
   }
 }

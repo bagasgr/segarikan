@@ -55,8 +55,12 @@ export async function saveHistoryToDB(data) {
   const insertedId = await store.add(data);
   await tx.done;
 
-  // Ambil token dari data.token jika ada, jika tidak ada coba dari localStorage
   const token = data.token || localStorage.getItem('token');
+
+  if (!token) {
+    console.warn('⚠️ Token tidak ditemukan, data hanya disimpan di IndexedDB.');
+    return insertedId;
+  }
 
   try {
     const base64ToBlob = (base64) => {
@@ -72,42 +76,46 @@ export async function saveHistoryToDB(data) {
     };
 
     const formData = new FormData();
-
     if (data.email) formData.append('email', data.email);
     if (data.name) formData.append('name', data.name);
     if (data.result) formData.append('result', data.result);
     if (data.savedAt) formData.append('savedAt', data.savedAt);
-
     if (data.imageData) {
       const photoBlob = base64ToBlob(data.imageData);
       formData.append('photo', photoBlob, 'photo.png');
-    } else {
-      console.warn('⚠️ Data imageData kosong, API mungkin akan menolak request');
     }
 
     const response = await fetch(`${CONFIG.BASE_URL}/v1/stories`, {
       method: 'POST',
       headers: {
-        ...(token && { Authorization: `Bearer ${token}` }),
+        Authorization: `Bearer ${token}`,
       },
       body: formData,
     });
 
+    const resultJson = await response.json();
+
     if (!response.ok) {
-      const errorJson = await response.json();
-      console.error('❌ Gagal mengirim data ke API:', response.status, errorJson);
-    } else {
-      const result = await response.json();
-      console.log('✅ Data history berhasil dikirim ke API:', result);
+      console.error('❌ Gagal mengirim data ke API:', response.status, resultJson);
+
+      // Jika token invalid
+      if (response.status === 403 && resultJson.message?.includes('Invalid token')) {
+        alert('Session Anda telah habis. Silakan login kembali.');
+        localStorage.removeItem('token');
+      }
+
+      return insertedId;
     }
+
+    console.log('✅ Data history berhasil dikirim ke API:', resultJson);
+    return insertedId;
+
   } catch (error) {
     console.error('❌ Terjadi kesalahan saat mengirim ke API:', error);
+    return insertedId;
   }
-
-  return insertedId;
 }
 
-// Perbaikan: saat getAllHistoryFromDB, kita format savedAt jadi Date object untuk memudahkan grafik nanti
 export async function getAllHistoryFromDB() {
   const db = await getDB();
   const tx = db.transaction(STORE_HISTORY, 'readonly');
@@ -115,7 +123,6 @@ export async function getAllHistoryFromDB() {
   const allHistory = await store.getAll();
   await tx.done;
 
-  // Format savedAt ke Date, supaya mudah dipakai di grafik
   return allHistory.map(item => ({
     ...item,
     savedAt: item.savedAt ? new Date(item.savedAt) : null,

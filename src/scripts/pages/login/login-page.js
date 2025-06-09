@@ -114,15 +114,25 @@ export default class LoginPage {
         });
 
         const result = await response.json();
+        console.log('Response login:', result);
 
         if (!response.ok || result.error) {
           alert(result.message || 'Login gagal');
           return;
         }
 
-        const { loginResult } = result;
-        localStorage.setItem('token', loginResult.token);
-        localStorage.setItem('loggedInUser', JSON.stringify({ name: loginResult.name, userId: loginResult.userId }));
+        // Ambil token dan data user dari response
+        const token = result.token || (result.data && result.data.token) || (result.loginResult && result.loginResult.token);
+        const name = result.name || (result.data && result.data.name) || (result.loginResult && result.loginResult.name);
+        const userId = result.userId || (result.data && result.data.userId) || (result.loginResult && result.loginResult.userId);
+
+        if (!token) {
+          alert('Token tidak ditemukan pada response login.');
+          return;
+        }
+
+        localStorage.setItem('token', token);
+        localStorage.setItem('loggedInUser', JSON.stringify({ name, userId }));
 
         showModal('Login berhasil!');
       } catch (error) {
