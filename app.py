@@ -172,6 +172,7 @@ def register():
         return jsonify({"status": "success", "message": "Registrasi berhasil"}), 201
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
+    
 @app.route('/api/v1/login', methods=['POST', 'OPTIONS'])
 @app.route('/v1/login', methods=['POST', 'OPTIONS'])
 def login():
