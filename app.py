@@ -1,3 +1,7 @@
+import os
+from dotenv import load_dotenv
+load_dotenv()
+
 from flask import Flask, request, jsonify
 from flask_cors import CORS 
 import tensorflow as tf
@@ -6,8 +10,15 @@ from PIL import Image
 import io
 import base64
 
+
+
+
+# Init Flask
 app = Flask(__name__)
-CORS(app, supports_credentials=True, resources={r"/*": {"origins": "*"}})
+
+# Dynamic CORS
+allowed_origins = os.getenv("CORS_ALLOWED_ORIGINS", "*").split(",")
+CORS(app, supports_credentials=True, resources={r"/*": {"origins": allowed_origins}})
 
 # Simpan user sementara di memori (tidak pakai file JSON)
 registered_users = []
@@ -17,6 +28,7 @@ model1 = tf.keras.models.load_model('model/model_cek_ikan.h5')
 model2 = tf.keras.models.load_model('model/model_cek_kepala_ikan.h5')
 model3 = tf.keras.models.load_model('model/model_last_ikan.h5')
 
+# Image decoder
 def decode_image(base64_string):
     image_bytes = base64.b64decode(base64_string)
     img = Image.open(io.BytesIO(image_bytes)).convert('RGB')
@@ -24,6 +36,7 @@ def decode_image(base64_string):
     img_array = np.array(img) / 255.0
     return np.expand_dims(img_array, axis=0)
 
+# Predict with models
 def predict_with_models(img_tensor):
     preds = []
     for model, label in zip(
@@ -40,6 +53,7 @@ def predict_with_models(img_tensor):
         preds.append(result)
     return preds
 
+# Routes
 @app.route('/')
 def home():
     return "Flask server ready!"
@@ -156,5 +170,7 @@ def register():
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
 
+# Main entry point
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=9000, debug=True)
+    port = int(os.environ.get("PORT", 9000))  # PORT dynamic
+    app.run(host='0.0.0.0', port=port, debug=True)
