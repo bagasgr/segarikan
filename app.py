@@ -3,24 +3,23 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from flask import Flask, request, jsonify
-from flask_cors import CORS 
+from flask_cors import CORS
 import tensorflow as tf
 import numpy as np
 from PIL import Image
 import io
 import base64
 
-
-
-
 # Init Flask
 app = Flask(__name__)
 
 # Dynamic CORS
 allowed_origins = os.getenv("CORS_ALLOWED_ORIGINS", "*").split(",")
+print(f"Allowed origins: {allowed_origins}")  # Debug CORS ENV
+
 CORS(app, supports_credentials=True, resources={r"/*": {"origins": allowed_origins}})
 
-# Simpan user sementara di memori (tidak pakai file JSON)
+# Simpan user sementara di memori
 registered_users = []
 
 # Load model-model

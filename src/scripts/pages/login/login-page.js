@@ -42,7 +42,7 @@ export default class LoginPage {
       </section>
 
       <!-- Modal Notifikasi -->
-      <div id="notification-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
+      <div id="notification-modal" class="fixed inset-0 bg-black bg-opacity-50 items-center justify-center hidden z-50">
         <div class="bg-white rounded-lg shadow-lg max-w-sm w-full p-6 text-center relative">
           <button id="modal-close-btn" class="absolute top-3 right-3 text-gray-500 hover:text-gray-700 text-xl font-bold">&times;</button>
           <p id="modal-message" class="text-gray-800 text-lg"></p>
@@ -63,10 +63,12 @@ export default class LoginPage {
     function showModal(message) {
       modalMessage.textContent = message;
       modal.classList.remove('hidden');
+      modal.classList.add('flex'); // tambahkan flex saat modal ditampilkan
     }
 
     function hideModal() {
       modal.classList.add('hidden');
+      modal.classList.remove('flex'); // hilangkan flex saat modal disembunyikan
     }
 
     modalCloseBtn.addEventListener('click', hideModal);
