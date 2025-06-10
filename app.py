@@ -142,8 +142,12 @@ def get_history():
         {"freshness": "Segar", "actualFreshness": "Tidak Segar"},
     ]
     return jsonify(history_data)
+# === REGISTER ROUTES ===
 
+# /api/v1/register → biarkan tetap
 @app.route('/api/v1/register', methods=['POST', 'OPTIONS'])
+# /v1/register → tambahkan supaya frontend bisa pakai BASE_URL yang sekarang
+@app.route('/v1/register', methods=['POST', 'OPTIONS'])
 def register():
     if request.method == 'OPTIONS':
         return '', 200
@@ -168,6 +172,35 @@ def register():
         return jsonify({"status": "success", "message": "Registrasi berhasil"}), 201
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
+@app.route('/api/v1/login', methods=['POST', 'OPTIONS'])
+@app.route('/v1/login', methods=['POST', 'OPTIONS'])
+def login():
+    if request.method == 'OPTIONS':
+        return '', 200
+    try:
+        data = request.get_json()
+        email = data.get('email')
+        password = data.get('password')
+
+        if not email or not password:
+            return jsonify({"status": "error", "message": "Data tidak lengkap"}), 400
+
+        user = next((user for user in registered_users if user['email'] == email and user['password'] == password), None)
+
+        if not user:
+            return jsonify({"status": "error", "message": "Email atau password salah"}), 401
+
+        return jsonify({
+            "status": "success",
+            "message": "Login berhasil",
+            "user": {
+                "fullName": user['fullName'],
+                "email": user['email']
+            }
+        }), 200
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
 
 # Main entry point
 if __name__ == '__main__':
