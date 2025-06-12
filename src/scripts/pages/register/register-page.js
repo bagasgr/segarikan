@@ -1,4 +1,5 @@
 import CONFIG from '../../config.js';
+import RegisterPresenter from '../../data/registerpresenter.js';
 
 
 export default class RegisterPage {
@@ -49,61 +50,46 @@ export default class RegisterPage {
   }
 
   async afterRender() {
-    // Fungsi toggle show/hide password
+    // Toggle show/hide password
     const togglePasswordBtn = document.getElementById('toggle-password');
     const passwordInput = document.getElementById('password');
     const eyeIcon = document.getElementById('eye-icon');
     const eyeOffIcon = document.getElementById('eye-off-icon');
 
-    togglePasswordBtn.addEventListener('click', () => {
-      const isPassword = passwordInput.type === 'password';
+    if (togglePasswordBtn && passwordInput && eyeIcon && eyeOffIcon) {
+      togglePasswordBtn.addEventListener('click', () => {
+        const isPassword = passwordInput.type === 'password';
+        if (isPassword) {
+          passwordInput.type = 'text';
+          eyeIcon.style.display = 'none';
+          eyeOffIcon.style.display = 'block';
+        } else {
+          passwordInput.type = 'password';
+          eyeIcon.style.display = 'block';
+          eyeOffIcon.style.display = 'none';
+        }
+      });
+    }
 
-      if (isPassword) {
-        passwordInput.type = 'text';
-        eyeIcon.style.display = 'none';
-        eyeOffIcon.style.display = 'block';
-      } else {
-        passwordInput.type = 'password';
-        eyeIcon.style.display = 'block';
-        eyeOffIcon.style.display = 'none';
-      }
+    // Buat instance RegisterPresenter dengan callback ke view
+    const presenter = new RegisterPresenter({
+      registerView: {
+        showAlert: (msg) => alert(msg),
+        redirectToLogin: () => { window.location.hash = '/login'; },
+      },
     });
 
     const form = document.querySelector('#register-form');
-    form.addEventListener('submit', async (event) => {
-      event.preventDefault();
+    if (form) {
+      form.addEventListener('submit', async (event) => {
+        event.preventDefault();
 
-      const name = form.name.value.trim();
-      const email = form.email.value.trim();
-      const password = form.password.value.trim();
+        const name = form.name.value.trim();
+        const email = form.email.value.trim();
+        const password = form.password.value.trim();
 
-      if (!name || !email || !password) {
-        alert('Semua field wajib diisi!');
-        return;
-      }
-
-      try {
-        const response = await fetch(`${CONFIG.BASE_URL}/v1/register`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ name, email, password }),
-        });
-
-        const result = await response.json();
-
-        if (!response.ok || result.error) {
-          alert(result.message || 'Registrasi gagal');
-          return;
-        }
-
-        alert('Registrasi berhasil! Silakan login.');
-        window.location.hash = '/login';
-      } catch (error) {
-        alert('Terjadi kesalahan saat registrasi, coba lagi.');
-        console.error('Register error:', error);
-      }
-    });
+        await presenter.register({ name, email, password });
+      });
+    }
   }
 }
