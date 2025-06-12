@@ -18,8 +18,10 @@ app = Flask(__name__)
 allowed_origins = [
     "http://localhost:9000",
     "http://localhost:9001",
-    "https://bagasgr.github.io"
+    "https://bagasgr.github.io",
+    "https://segarikan-srzk-git-main-bagasgrs-projects.vercel.app"
 ]
+
 CORS(app, supports_credentials=True, resources={r"/*": {"origins": allowed_origins}})
 
 # User yang telah register disimpan sementara di memori
