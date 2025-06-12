@@ -13,10 +13,12 @@ import base64
 # Init Flask
 app = Flask(__name__)
 
-# Dynamic CORS
-allowed_origins = os.getenv("CORS_ALLOWED_ORIGINS", "*").split(",")
-print(f"Allowed origins: {allowed_origins}")  # Debug CORS ENV
-
+# CORS whitelist (tambahkan domain front-end kamu di sini)
+allowed_origins = [
+    "http://localhost:9000",
+    "http://localhost:9001",
+    "https://bagasgr.github.io"
+]
 CORS(app, supports_credentials=True, resources={r"/*": {"origins": allowed_origins}})
 
 # Simpan user sementara di memori
@@ -64,13 +66,10 @@ def check_fish():
     try:
         data = request.get_json()
         image_data = data.get('image')
-
         if not image_data:
             return jsonify({"error": "Gambar tidak ditemukan"}), 400
-
         img_tensor = decode_image(image_data)
         results = predict_with_models(img_tensor)
-
         return jsonify({
             "status": "success",
             "message": "Fish checked successfully",
@@ -86,13 +85,10 @@ def check_freshness():
     try:
         data = request.get_json()
         image_data = data.get('image')
-
         if not image_data:
             return jsonify({"error": "Gambar tidak ditemukan"}), 400
-
         img_tensor = decode_image(image_data)
         results = predict_with_models(img_tensor)
-
         return jsonify({
             "status": "success",
             "message": "Freshness checked successfully",
@@ -108,13 +104,10 @@ def predict():
     try:
         data = request.get_json()
         image_data = data.get('image')
-
         if not image_data:
             return jsonify({"error": "Gambar tidak ditemukan"}), 400
-
         img_tensor = decode_image(image_data)
         results = predict_with_models(img_tensor)
-
         return jsonify({"result": results}), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -128,10 +121,8 @@ def save_story():
         image_data = data.get('imageData')
         result = data.get('result')
         created_at = data.get('createdAt')
-
         if not image_data or not result or not created_at:
             return jsonify({"status": "error", "message": "Data tidak lengkap"}), 400
-
         response = {
             "status": "success",
             "message": "Data berhasil disimpan (tanpa file)",
@@ -155,8 +146,6 @@ def get_history():
     ]
     return jsonify(history_data)
 
-# === REGISTER ROUTES ===
-
 @app.route('/api/v1/register', methods=['POST', 'OPTIONS'])
 @app.route('/v1/register', methods=['POST', 'OPTIONS'])
 def register():
@@ -167,19 +156,15 @@ def register():
         full_name = data.get('fullName')
         email = data.get('email')
         password = data.get('password')
-
         if not full_name or not email or not password:
             return jsonify({"status": "error", "message": "Data tidak lengkap"}), 400
-
         if any(user["email"] == email for user in registered_users):
             return jsonify({"status": "error", "message": "Email sudah terdaftar"}), 409
-
         registered_users.append({
             "fullName": full_name,
             "email": email,
             "password": password
         })
-
         return jsonify({"status": "success", "message": "Registrasi berhasil"}), 201
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
@@ -193,15 +178,11 @@ def login():
         data = request.get_json()
         email = data.get('email')
         password = data.get('password')
-
         if not email or not password:
             return jsonify({"status": "error", "message": "Data tidak lengkap"}), 400
-
         user = next((user for user in registered_users if user['email'] == email and user['password'] == password), None)
-
         if not user:
             return jsonify({"status": "error", "message": "Email atau password salah"}), 401
-
         return jsonify({
             "status": "success",
             "message": "Login berhasil",
@@ -215,5 +196,5 @@ def login():
 
 # Main entry point
 if __name__ == '__main__':
-    port = int(os.environ.get("PORT", 9000))  # PORT dynamic
+    port = int(os.environ.get("PORT", 9000))  # default port 9000
     app.run(host='0.0.0.0', port=port, debug=True)
