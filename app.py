@@ -1,19 +1,20 @@
 import os
+import io
+import base64
 from dotenv import load_dotenv
-load_dotenv()
-
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import tensorflow as tf
 import numpy as np
 from PIL import Image
-import io
-import base64
 
-# Init Flask
+# Load environment
+load_dotenv()
+
+# Inisialisasi Flask
 app = Flask(__name__)
 
-# CORS whitelist (tambahkan domain front-end kamu di sini)
+# Konfigurasi CORS
 allowed_origins = [
     "http://localhost:9000",
     "http://localhost:9001",
@@ -21,15 +22,15 @@ allowed_origins = [
 ]
 CORS(app, supports_credentials=True, resources={r"/*": {"origins": allowed_origins}})
 
-# Simpan user sementara di memori
+# User yang telah register disimpan sementara di memori
 registered_users = []
 
-# Load model-model
+# Load model TensorFlow
 model1 = tf.keras.models.load_model('model/model_cek_ikan.h5')
 model2 = tf.keras.models.load_model('model/model_cek_kepala_ikan.h5')
 model3 = tf.keras.models.load_model('model/model_last_ikan.h5')
 
-# Image decoder
+# Fungsi untuk mendecode gambar dari base64 ke format Tensor
 def decode_image(base64_string):
     image_bytes = base64.b64decode(base64_string)
     img = Image.open(io.BytesIO(image_bytes)).convert('RGB')
@@ -37,28 +38,32 @@ def decode_image(base64_string):
     img_array = np.array(img) / 255.0
     return np.expand_dims(img_array, axis=0)
 
-# Predict with models
+# Fungsi prediksi dengan tiga model
 def predict_with_models(img_tensor):
     preds = []
-    for model, label in zip(
-        [model1, model2, model3],
-        ['Ikan Umum', 'Kepala Ikan', 'Model Lain']
-    ):
+    models = [
+        (model1, 'Ikan Umum'),
+        (model2, 'Kepala Ikan'),
+        (model3, 'Model Lain')
+    ]
+    for model, label in models:
         prob = model.predict(img_tensor)[0][0]
         result = {
             "freshness": "Segar" if prob > 0.5 else "Tidak Segar",
             "confidence": round(float(prob), 2),
             "fish_type": label,
-            "recommendation": "Disarankan langsung dimasak atau disimpan di suhu dingin." if prob > 0.5 else "Sebaiknya tidak dikonsumsi langsung."
+            "recommendation": "Disarankan langsung dimasak atau disimpan di suhu dingin."
+                             if prob > 0.5 else "Sebaiknya tidak dikonsumsi langsung."
         }
         preds.append(result)
     return preds
 
-# Routes
+# Home endpoint
 @app.route('/')
 def home():
     return "Flask server ready!"
 
+# Endpoint pengecekan gambar ikan
 @app.route('/api/check_fish', methods=['POST', 'OPTIONS'])
 def check_fish():
     if request.method == 'OPTIONS':
@@ -78,6 +83,7 @@ def check_fish():
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
 
+# Endpoint pengecekan kesegaran
 @app.route('/api/check_freshness', methods=['POST', 'OPTIONS'])
 def check_freshness():
     if request.method == 'OPTIONS':
@@ -97,6 +103,7 @@ def check_freshness():
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
 
+# Endpoint prediksi umum
 @app.route('/api/predict', methods=['POST', 'OPTIONS'])
 def predict():
     if request.method == 'OPTIONS':
@@ -112,6 +119,7 @@ def predict():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+# Endpoint menyimpan hasil prediksi (tanpa menyimpan file fisik)
 @app.route('/v1/stories', methods=['POST', 'OPTIONS'])
 def save_story():
     if request.method == 'OPTIONS':
@@ -136,6 +144,7 @@ def save_story():
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
 
+# Endpoint dummy riwayat prediksi
 @app.route('/api/history', methods=['GET'])
 def get_history():
     history_data = [
@@ -146,6 +155,7 @@ def get_history():
     ]
     return jsonify(history_data)
 
+# Endpoint registrasi user
 @app.route('/api/v1/register', methods=['POST', 'OPTIONS'])
 @app.route('/v1/register', methods=['POST', 'OPTIONS'])
 def register():
@@ -169,6 +179,7 @@ def register():
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
 
+# Endpoint login user
 @app.route('/api/v1/login', methods=['POST', 'OPTIONS'])
 @app.route('/v1/login', methods=['POST', 'OPTIONS'])
 def login():
@@ -196,5 +207,5 @@ def login():
 
 # Main entry point
 if __name__ == '__main__':
-    port = int(os.environ.get("PORT", 9000))  # default port 9000
+    port = int(os.environ.get("PORT", 9000))  # Default port 9000 jika tidak diset
     app.run(host='0.0.0.0', port=port, debug=True)
