@@ -36,7 +36,7 @@ export default class ProfilePage {
           </div>
         </div>
       </div>
-      
+
       <div class="bg-white rounded-xl shadow-lg p-6 border-t-4 border-green-600">
         <div class="flex items-center justify-between">
           <div>
@@ -50,7 +50,7 @@ export default class ProfilePage {
           </div>
         </div>
       </div>
-      
+
       <div class="bg-white rounded-xl shadow-lg p-6 border-t-4 border-yellow-600">
         <div class="flex items-center justify-between">
           <div>
@@ -65,25 +65,24 @@ export default class ProfilePage {
         </div>
       </div>
     </div>
-      
-      <div id="history-container" class="space-y-4">
-        <div class="flex items-center justify-center py-8">
-          <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-          <p class="ml-3 text-gray-600">Memuat riwayat...</p>
-        </div>
+
+    <div id="history-container" class="space-y-4">
+      <div class="flex items-center justify-center py-8">
+        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        <p class="ml-3 text-gray-600">Memuat riwayat...</p>
       </div>
-      
-      <!-- Empty State -->
-      <div id="empty-state" class="hidden text-center py-12">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 text-gray-400 mx-auto mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-        </svg>
-        <h3 class="text-lg font-semibold text-gray-700 mb-2">Belum Ada Riwayat Scan</h3>
-        <p class="text-gray-500 mb-4">Mulai scan ikan pertama Anda untuk melihat riwayat di sini</p>
-        <button id="start-scan-btn" class="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition">
-          Mulai Scan Sekarang
-        </button>
-      </div>
+    </div>
+
+    <!-- Empty State -->
+    <div id="empty-state" class="hidden text-center py-12">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 text-gray-400 mx-auto mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+      </svg>
+      <h3 class="text-lg font-semibold text-gray-700 mb-2">Belum Ada Riwayat Scan</h3>
+      <p class="text-gray-500 mb-4">Mulai scan ikan pertama Anda untuk melihat riwayat di sini</p>
+      <button id="start-scan-btn" class="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition">
+        Mulai Scan Sekarang
+      </button>
     </div>
   </div>
 </section>
@@ -91,16 +90,10 @@ export default class ProfilePage {
   }
 
   async afterRender() {
-    // Load user data
     this.loadUserData();
-
-    // Initialize database
     await initDB();
-
-    // Load and display history
     await this.loadHistory();
 
-    // Add event listener for start scan button
     const startScanBtn = document.getElementById('start-scan-btn');
     if (startScanBtn) {
       startScanBtn.addEventListener('click', () => {
@@ -113,19 +106,13 @@ export default class ProfilePage {
     const loggedInUser = localStorage.getItem('loggedInUser');
     if (loggedInUser) {
       const userData = JSON.parse(loggedInUser);
-      document.getElementById('user-name').textContent =
-        userData.name || 'Nama Pengguna';
-      document.getElementById('user-email').textContent =
-        userData.email || 'email@example.com';
-
-      // Set member since date (you can store this when user registers)
-      const memberSince =
-        userData.memberSince || new Date().toLocaleDateString();
+      document.getElementById('user-name').textContent = userData.name || 'Nama Pengguna';
+      document.getElementById('user-email').textContent = userData.email || 'email@example.com';
+      const memberSince = userData.memberSince || new Date().toLocaleDateString();
       document.getElementById('member-since').textContent = memberSince;
     }
   }
 
-  // Helper functions (same as ResultPage)
   formatScore(score) {
     if (score === undefined || score === null) return 'N/A';
     const percentage = (parseFloat(score) * 100).toFixed(1);
@@ -154,7 +141,6 @@ export default class ProfilePage {
 
     try {
       const historyList = await getAllHistoryFromDB();
-
       const loggedInUser = localStorage.getItem('loggedInUser');
       const userEmail = loggedInUser ? JSON.parse(loggedInUser).email : null;
 
@@ -168,173 +154,51 @@ export default class ProfilePage {
         return;
       }
 
-      // Calculate statistics
+      // Tampilkan statistik
       this.calculateStatistics(filteredHistory);
 
-      // Clear loading state
+      // Kosongkan loading
       historyContainer.innerHTML = '';
       emptyState.classList.add('hidden');
 
-      // Sort by date (newest first)
+      // Urutkan dari terbaru
       filteredHistory.sort((a, b) => new Date(b.savedAt) - new Date(a.savedAt));
 
-      // Render each history item
-      filteredHistory.forEach((item, index) => {
+      filteredHistory.forEach((item) => {
         const date = new Date(item.savedAt);
         const dateStr = date.toLocaleString();
-        const dateIso = date.toISOString();
+        const card = document.createElement('div');
+        card.className = 'bg-white rounded-lg shadow p-4';
 
-        // Handle both old and new result formats
-        const results = item.result || [];
-        if (results.length === 0) {
-          return; // Skip items with no results
-        }
-
-        // Create HTML for each result in the history item
-        let resultsHtml = '';
-        results.forEach((result, resultIndex) => {
-          let fishType = 'Tidak diketahui';
-          let confidence = 'N/A';
-          let confidenceColor = 'gray';
-          let confidenceText = 'Tidak diketahui';
-
-          // Handle new format (step, type, score)
-          if (result.step && result.type && result.score !== undefined) {
-            fishType = result.type;
-            confidence = this.formatScore(result.score);
-            confidenceColor = this.getConfidenceColor(result.score);
-            confidenceText = this.getConfidenceText(result.score);
-          }
-          // Handle old format (confidence, freshness, recommendation)
-          else if (result.confidence !== undefined) {
-            confidence = this.formatScore(result.confidence);
-            confidenceColor = this.getConfidenceColor(result.confidence);
-            confidenceText = this.getConfidenceText(result.confidence);
-            fishType = result.freshness || 'Tidak diketahui';
-          }
-
-          resultsHtml += `
-            <div class="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200 mb-3">
-              <div class="flex items-center justify-between mb-2">
-                <h4 class="text-sm font-semibold text-blue-700">
-                  <i class="fas fa-fish mr-1"></i>Hasil #${resultIndex + 1}
-                </h4>
-                <span class="text-xs text-gray-500">${
-                  result.step || 'Analisis'
-                }</span>
-              </div>
-              
-              <div class="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
-                <div>
-                  <span class="font-medium text-gray-600">Jenis:</span>
-                  <div class="text-blue-600 font-semibold">${fishType}</div>
-                </div>
-                <div>
-                  <span class="font-medium text-gray-600">Akurasi:</span>
-                  <div class="text-${confidenceColor}-600 font-semibold">${confidence}</div>
-                </div>
-                <div>
-                  <span class="font-medium text-gray-600">Kepercayaan:</span>
-                  <div class="text-${confidenceColor}-600 font-medium">${confidenceText}</div>
-                </div>
-              </div>
-              
-              ${
-                result.recommendation
-                  ? `
-                <div class="mt-2 pt-2 border-t border-blue-200">
-                  <span class="font-medium text-gray-600 text-sm">Rekomendasi:</span>
-                  <div class="text-gray-700 text-sm">${result.recommendation}</div>
-                </div>
-              `
-                  : ''
-              }
+        card.innerHTML = `
+          <div class="flex justify-between items-center">
+            <div>
+              <p class="font-semibold text-blue-600">${item.fishName || 'Ikan Tidak Dikenal'}</p>
+              <p class="text-sm text-gray-500">${dateStr}</p>
             </div>
-          `;
-        });
-
-        const html = `
-          <div class="border rounded-xl p-6 shadow-sm bg-white hover:shadow-md transition-shadow">
-            <div class="flex flex-col md:flex-row md:items-start gap-4">
-              <div class="flex-1">
-                <div class="flex items-center gap-2 mb-3">
-                  <span class="text-sm font-medium text-gray-500">Scan #${
-                    filteredHistory.length - index
-                  }</span>
-                  <span class="w-2 h-2 bg-blue-500 rounded-full"></span>
-                  <span class="text-sm font-medium text-blue-700">${
-                    results.length
-                  } Hasil Deteksi</span>
-                </div>
-                
-                <p class="font-semibold text-blue-700 mb-4">
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  <time datetime="${dateIso}">${dateStr}</time>
-                </p>
-                
-                <div class="space-y-2">
-                  ${resultsHtml}
-                </div>
-              </div>
-              
-              ${
-                item.imageData
-                  ? `<div class="flex-shrink-0">
-                       <img src="${item.imageData}" alt="Hasil Gambar Ikan" class="w-24 h-24 md:w-32 md:h-32 object-cover rounded-lg shadow-sm border">
-                     </div>`
-                  : ''
-              }
+            <div class="text-right">
+              <p class="text-sm font-medium text-gray-600">Confidence</p>
+              <p class="text-lg font-bold text-${this.getConfidenceColor(item.score)}-600">
+                ${this.formatScore(item.score)}
+              </p>
+              <p class="text-sm text-gray-500">${this.getConfidenceText(item.score)}</p>
             </div>
           </div>
         `;
-
-        historyContainer.insertAdjacentHTML('beforeend', html);
+        historyContainer.appendChild(card);
       });
     } catch (error) {
-      historyContainer.innerHTML = `
-        <div class="text-center py-8">
-          <p class="text-red-600">Terjadi kesalahan saat memuat riwayat.</p>
-        </div>
-      `;
+      console.error('Gagal memuat riwayat:', error);
     }
   }
 
-  calculateStatistics(historyList) {
-  const totalScans = historyList.length;
-  let highConfidenceCount = 0;
-  let lowConfidenceCount = 0;
-
-  historyList.forEach((item) => {
-    const results = item.result || [];
-    results.forEach((result) => {
-      let score = null;
-
-      // Handle new format
-      if (result.score !== undefined) {
-        score = result.score;
-      }
-      // Handle old format
-      else if (result.confidence !== undefined) {
-        score = result.confidence;
-      }
-
-      if (score !== null) {
-        const percentage = parseFloat(score) * 100;
-        if (percentage >= 80) {
-          highConfidenceCount += 1;
-        } else if (percentage < 60) {
-          lowConfidenceCount += 1;
-        }
-      }
-    });
-  });
+  calculateStatistics(history) {
+    const totalScans = history.length;
+    const highConfidence = history.filter((item) => item.score >= 0.8).length;
+    const lowConfidence = history.filter((item) => item.score < 0.6).length;
 
     document.getElementById('total-scans').textContent = totalScans;
-    document.getElementById('high-confidence-count').textContent =
-      highConfidenceCount;
-    document.getElementById('low-confidence-count').textContent =
-      lowConfidenceCount;
+    document.getElementById('high-confidence-count').textContent = highConfidence;
+    document.getElementById('low-confidence-count').textContent = lowConfidence;
   }
 }

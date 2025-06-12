@@ -1,5 +1,6 @@
 // src/views/pages/ResultPage.js
 import { saveHistoryToDB } from '../../data/indexdb.js';
+// import { saveHistoryToDB } from '../../utils/save-result.js'; // Ini sebaiknya hanya satu yang diaktifkan jika duplicate
 
 export default class ResultPage {
   async render() {
@@ -15,32 +16,20 @@ export default class ResultPage {
 
             <div id="fish-warning" class="hidden mb-6 p-4 bg-red-50 border-l-4 border-red-400 rounded-lg">
               <div class="flex items-center">
-                <div class="flex-shrink-0">
-                  <i class="fas fa-exclamation-triangle text-red-400 text-xl"></i>
-                </div>
-                <div class="ml-3">
-                  <h3 class="text-sm font-medium text-red-800">
-                    Peringatan: Gambar Bukan Ikan
-                  </h3>
-                  <div class="mt-2 text-sm text-red-700">
-                    <p>Gambar yang Anda upload tampaknya bukan gambar ikan. Untuk hasil yang optimal, silakan upload gambar ikan yang jelas.</p>
-                  </div>
+                <i class="fas fa-exclamation-triangle text-red-400 text-xl mr-3"></i>
+                <div>
+                  <h3 class="text-sm font-medium text-red-800">Peringatan: Gambar Bukan Ikan</h3>
+                  <p class="text-sm text-red-700 mt-2">Gambar yang Anda upload tampaknya bukan gambar ikan. Untuk hasil optimal, silakan upload gambar ikan yang jelas.</p>
                 </div>
               </div>
             </div>
 
             <div id="low-confidence-warning" class="hidden mb-6 p-4 bg-yellow-50 border-l-4 border-yellow-400 rounded-lg">
               <div class="flex items-center">
-                <div class="flex-shrink-0">
-                  <i class="fas fa-exclamation-circle text-yellow-400 text-xl"></i>
-                </div>
-                <div class="ml-3">
-                  <h3 class="text-sm font-medium text-yellow-800">
-                    Peringatan: Kepercayaan Rendah
-                  </h3>
-                  <div class="mt-2 text-sm text-yellow-700">
-                    <p>Hasil deteksi memiliki tingkat kepercayaan yang rendah. Coba upload gambar ikan yang lebih jelas atau dengan pencahayaan yang baik.</p>
-                  </div>
+                <i class="fas fa-exclamation-circle text-yellow-400 text-xl mr-3"></i>
+                <div>
+                  <h3 class="text-sm font-medium text-yellow-800">Peringatan: Kepercayaan Rendah</h3>
+                  <p class="text-sm text-yellow-700 mt-2">Hasil deteksi memiliki tingkat kepercayaan rendah. Coba upload gambar dengan kualitas lebih baik.</p>
                 </div>
               </div>
             </div>
@@ -49,8 +38,6 @@ export default class ResultPage {
               <h2 class="text-xl font-semibold text-gray-700 mb-6">Detail Hasil:</h2>
               <div id="result-list" class="space-y-6"></div>
             </div>
-
-            <div id="non-fish-message" class="hidden text-center"></div>
 
             <div class="mt-10 space-y-4">
               <button id="save-button" class="w-full md:w-auto bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg shadow-md transition duration-200 font-semibold" disabled>
@@ -112,15 +99,13 @@ export default class ResultPage {
 
     resultImage.src = data.imageData || '';
 
-    // Fungsi cek apakah gambar berisi ikan
     const checkIfFishImage = (results) => {
       if (!Array.isArray(results) || results.length === 0) {
         return { isFish: false, maxConfidence: 0, reason: 'no_detection' };
       }
 
-      const fishKeywords = ['fish','ikan','tuna','salmon','cod','mackerel','snapper','grouper','bass','trout','sardine','anchovy','herring','mahi','swordfish','marlin','flounder','sole','halibut','catfish','carp','pike','perch','tilapia','barramundi','sea bass','red snapper','yellowtail','amberjack','bandeng','gurame','lele','nila','kakap','tenggiri','tongkol','cakalang','kembung','patin','bawal','belut'];
-
-      const nonFishKeywords = ['person','orang','manusia','human','people','cat','kucing','dog','anjing','bird','burung','car','mobil','vehicle','kendaraan','building','gedung','bangunan','house','rumah','food','makanan','meal','dish','hidangan','object','objek','thing','barang','hand','tangan','finger','jari','face','wajah','muka','plant','tanaman','tree','pohon','bottle','botol','cup','gelas','phone','handphone','smartphone','table','meja','chair','kursi','book','buku','paper','kertas','cloth','baju','shirt','kemeja'];
+      const fishKeywords = ['fish', 'ikan', 'tuna', 'salmon', 'kakap', 'tongkol', 'nila', 'lele', 'bandeng'];
+      const nonFishKeywords = ['orang', 'kucing', 'anjing', 'mobil', 'rumah', 'makanan', 'buku', 'tanaman'];
 
       let maxConfidence = 0;
       let fishDetected = false;
@@ -134,7 +119,6 @@ export default class ResultPage {
 
         if (fishKeywords.some(keyword => type.includes(keyword))) fishDetected = true;
         if (nonFishKeywords.some(keyword => type.includes(keyword))) nonFishDetected = true;
-        if (type.includes('bukan') && type.includes('ikan')) nonFishDetected = true;
       }
 
       if (nonFishDetected && maxConfidence >= 0.3) return { isFish: false, maxConfidence, reason: 'non_fish_detected' };
@@ -147,7 +131,6 @@ export default class ResultPage {
     const result = data.result || [];
     const fishCheck = checkIfFishImage(result);
 
-    // Reset tampilan
     fishWarning.classList.add('hidden');
     lowConfidenceWarning.classList.add('hidden');
     resultContent.classList.add('hidden');
@@ -159,91 +142,50 @@ export default class ResultPage {
       resultList.innerHTML = '';
     } else {
       resultContent.classList.remove('hidden');
-      fishWarning.classList.add('hidden');
+      if (fishCheck.maxConfidence < 0.5) lowConfidenceWarning.classList.remove('hidden');
 
-      if (fishCheck.maxConfidence < 0.5) {
-        lowConfidenceWarning.classList.remove('hidden');
-      }
-
-      // Tambahan: Detail hasil utama (hasil deteksi #1) di atas
       const mainResult = result[0] || {};
       const mainScore = (parseFloat(mainResult.score || 0) * 100).toFixed(1);
       let confidenceLevel = 'Rendah';
       let confidenceColor = 'text-red-600';
 
-      if (mainScore >= 80) {
-        confidenceLevel = 'Tinggi';
-        confidenceColor = 'text-green-600';
-      } else if (mainScore >= 50) {
-        confidenceLevel = 'Sedang';
-        confidenceColor = 'text-yellow-600';
-      }
+      if (mainScore >= 80) confidenceLevel = 'Tinggi', confidenceColor = 'text-green-600';
+      else if (mainScore >= 50) confidenceLevel = 'Sedang', confidenceColor = 'text-yellow-600';
 
-      // Warna progress bar berdasar confidence
       let progressColor = 'bg-green-500';
       if (mainScore < 40) progressColor = 'bg-red-500';
       else if (mainScore < 70) progressColor = 'bg-yellow-400';
 
-      // Buat detail hasil lengkap dengan desain card yang menarik
       resultList.innerHTML = `
         <div class="p-6 bg-white rounded-xl shadow-lg border border-blue-200">
           <h3 class="text-lg font-semibold text-blue-700 mb-4">Hasil Deteksi #1</h3>
           <ul class="text-gray-700 space-y-2 text-sm">
             <li><span class="font-semibold">Jenis Ikan:</span> ${mainResult.type || '-'}</li>
-            <li><span class="font-semibold">Status:</span> ${mainResult.type && mainResult.type.toLowerCase().includes('seg') ? 'Segar' : 'Tidak Segar'}</li>
+            <li><span class="font-semibold">Status:</span> ${mainResult.type?.toLowerCase().includes('seg') ? 'Segar' : 'Tidak Segar'}</li>
             <li><span class="font-semibold">Akurasi:</span> ${mainScore}%</li>
-            <li><span class="font-semibold">Tingkat Kepercayaan:</span> <span class="${confidenceColor} font-semibold">${confidenceLevel}</span></li>
+            <li><span class="font-semibold">Kepercayaan:</span> <span class="${confidenceColor}">${confidenceLevel}</span></li>
           </ul>
-          <div class="mt-4 w-full bg-gray-300 rounded-full h-4">
-            <div class="${progressColor} h-4 rounded-full transition-all duration-500" style="width: ${mainScore}%;"></div>
+          <div class="mt-4 w-full bg-gray-200 rounded-full h-4">
+            <div class="${progressColor} h-4 rounded-full" style="width: ${mainScore}%"></div>
           </div>
-        </div>
-
-        <div class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
-          ${result.slice(1).map((item, idx) => {
-            const scorePct = (parseFloat(item.score || 0) * 100).toFixed(1);
-            let color = 'text-gray-700';
-            if (scorePct >= 70) color = 'text-green-600';
-            else if (scorePct >= 40) color = 'text-yellow-600';
-            else color = 'text-red-600';
-
-            return `
-              <div class="p-4 bg-white rounded-lg shadow border border-gray-200">
-                <h4 class="font-semibold text-gray-800 mb-1">Alternatif #${idx + 2}</h4>
-                <p><span class="font-semibold">Jenis Ikan:</span> ${item.type || '-'}</p>
-                <p><span class="font-semibold">Akurasi:</span> <span class="${color}">${scorePct}%</span></p>
-              </div>
-            `;
-          }).join('')}
         </div>
       `;
 
       saveButton.disabled = false;
     }
 
-    saveButton.onclick = async () => {
-      if (saveButton.disabled) return;
-      saveButton.disabled = true;
-
+    saveButton.addEventListener('click', async () => {
       try {
-        const historyData = {
-          imageData: data.imageData,
-          result: data.result,
-          createdAt: new Date().toISOString(),
-        };
-
-        await saveHistoryToDB(historyData);
-
-        // Show modal sukses
+        await saveHistoryToDB(data);
         modal.classList.remove('hidden');
-      } catch (err) {
-        alert('Gagal menyimpan hasil scan. Silakan coba lagi.');
-        saveButton.disabled = false;
+      } catch (e) {
+        alert('Gagal menyimpan data!');
+        console.error(e);
       }
-    };
+    });
 
-    closeModal.onclick = () => {
+    closeModal.addEventListener('click', () => {
       modal.classList.add('hidden');
-    };
+    });
   }
 }

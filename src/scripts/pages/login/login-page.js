@@ -1,5 +1,7 @@
 import { initDB, getUserByEmail } from '../../data/indexdb.js';
 import CONFIG from '../../config.js';
+import loginPresenter from '../../data/loginpresenter.js';
+
 
 export default class LoginPage {
   async render() {
@@ -63,12 +65,12 @@ export default class LoginPage {
     function showModal(message) {
       modalMessage.textContent = message;
       modal.classList.remove('hidden');
-      modal.classList.add('flex'); // tambahkan flex saat modal ditampilkan
+      modal.classList.add('flex');
     }
 
     function hideModal() {
       modal.classList.add('hidden');
-      modal.classList.remove('flex'); // hilangkan flex saat modal disembunyikan
+      modal.classList.remove('flex');
     }
 
     modalCloseBtn.addEventListener('click', hideModal);
@@ -84,20 +86,15 @@ export default class LoginPage {
 
     togglePasswordBtn.addEventListener('click', () => {
       const isPassword = passwordInput.type === 'password';
-      if (isPassword) {
-        passwordInput.type = 'text';
-        eyeIcon.style.display = 'none';
-        eyeOffIcon.style.display = 'block';
-      } else {
-        passwordInput.type = 'password';
-        eyeIcon.style.display = 'block';
-        eyeOffIcon.style.display = 'none';
-      }
+      passwordInput.type = isPassword ? 'text' : 'password';
+      eyeIcon.style.display = isPassword ? 'none' : 'block';
+      eyeOffIcon.style.display = isPassword ? 'block' : 'none';
     });
 
     const form = document.querySelector('#login-form');
     form.addEventListener('submit', async (event) => {
       event.preventDefault();
+
       const email = form.email.value.trim();
       const password = form.password.value.trim();
 
@@ -110,9 +107,9 @@ export default class LoginPage {
         const response = await fetch(`${CONFIG.BASE_URL}/v1/login`, {
           method: 'POST',
           headers: {
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ email, password })
+          body: JSON.stringify({ email, password }),
         });
 
         const result = await response.json();
@@ -123,13 +120,13 @@ export default class LoginPage {
           return;
         }
 
-        // Ambil token dan data user dari response
-        const token = result.token || (result.data && result.data.token) || (result.loginResult && result.loginResult.token);
-        const name = result.name || (result.data && result.data.name) || (result.loginResult && result.loginResult.name);
-        const userId = result.userId || (result.data && result.data.userId) || (result.loginResult && result.loginResult.userId);
+        // Ambil token dan data user
+        const token = result.token || result?.data?.token || result?.loginResult?.token;
+        const name = result.name || result?.data?.name || result?.loginResult?.name;
+        const userId = result.userId || result?.data?.userId || result?.loginResult?.userId;
 
         if (!token) {
-          alert('Token tidak ditemukan pada response login.');
+          alert('Token tidak ditemukan dalam response.');
           return;
         }
 
@@ -138,6 +135,7 @@ export default class LoginPage {
 
         showModal('Login berhasil!');
       } catch (error) {
+        console.error('Login error:', error);
         alert('Terjadi kesalahan saat login. Silakan coba lagi.');
       }
     });
