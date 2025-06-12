@@ -302,34 +302,34 @@ export default class ProfilePage {
   }
 
   calculateStatistics(historyList) {
-    const totalScans = historyList.length;
-    let highConfidenceCount = 0;
-    let lowConfidenceCount = 0;
+  const totalScans = historyList.length;
+  let highConfidenceCount = 0;
+  let lowConfidenceCount = 0;
 
-    historyList.forEach((item) => {
-      const results = item.result || [];
-      results.forEach((result) => {
-        let score = null;
+  historyList.forEach((item) => {
+    const results = item.result || [];
+    results.forEach((result) => {
+      let score = null;
 
-        // Handle new format
-        if (result.score !== undefined) {
-          score = result.score;
-        }
-        // Handle old format
-        else if (result.confidence !== undefined) {
-          score = result.confidence;
-        }
+      // Handle new format
+      if (result.score !== undefined) {
+        score = result.score;
+      }
+      // Handle old format
+      else if (result.confidence !== undefined) {
+        score = result.confidence;
+      }
 
-        if (score !== null) {
-          const percentage = parseFloat(score) * 100;
-          if (percentage >= 80) {
-            highConfidenceCount++;
-          } else if (percentage < 60) {
-            lowConfidenceCount++;
-          }
+      if (score !== null) {
+        const percentage = parseFloat(score) * 100;
+        if (percentage >= 80) {
+          highConfidenceCount += 1;
+        } else if (percentage < 60) {
+          lowConfidenceCount += 1;
         }
-      });
+      }
     });
+  });
 
     document.getElementById('total-scans').textContent = totalScans;
     document.getElementById('high-confidence-count').textContent =

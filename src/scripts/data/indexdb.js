@@ -52,7 +52,10 @@ export async function saveHistoryToDB(data) {
   const db = await getDB();
   const tx = db.transaction(STORE_HISTORY, 'readwrite');
   const store = tx.objectStore(STORE_HISTORY);
+  
+  // pastikan data.result disimpan sebagai array / object (tidak berubah)
   const insertedId = await store.add(data);
+  
   await tx.done;
 
   const token = data.token || localStorage.getItem('token');
@@ -78,8 +81,12 @@ export async function saveHistoryToDB(data) {
     const formData = new FormData();
     if (data.email) formData.append('email', data.email);
     if (data.name) formData.append('name', data.name);
-    if (data.result) formData.append('result', data.result);
+
+    // Perbaikan di sini: pastikan result dikirim sebagai JSON string, supaya server bisa membaca array
+    if (data.result) formData.append('result', JSON.stringify(data.result));
+
     if (data.savedAt) formData.append('savedAt', data.savedAt);
+
     if (data.imageData) {
       const photoBlob = base64ToBlob(data.imageData);
       formData.append('photo', photoBlob, 'photo.png');
@@ -96,22 +103,14 @@ export async function saveHistoryToDB(data) {
     const resultJson = await response.json();
 
     if (!response.ok) {
-      console.error('❌ Gagal mengirim data ke API:', response.status, resultJson);
-
-      // Jika token invalid
-      if (response.status === 403 && resultJson.message?.includes('Invalid token')) {
-        alert('Session Anda telah habis. Silakan login kembali.');
-        localStorage.removeItem('token');
-      }
-
-      return insertedId;
+      console.warn('⚠️ Gagal mengirim data ke server:', resultJson);
+    } else {
+      console.info('✅ Berhasil mengirim data ke server API:', resultJson);
     }
 
-    console.log('✅ Data history berhasil dikirim ke API:', resultJson);
     return insertedId;
-
   } catch (error) {
-    console.error('❌ Terjadi kesalahan saat mengirim ke API:', error);
+    console.error('❌ Error saat mengirim data ke server:', error);
     return insertedId;
   }
 }
@@ -122,9 +121,5 @@ export async function getAllHistoryFromDB() {
   const store = tx.objectStore(STORE_HISTORY);
   const allHistory = await store.getAll();
   await tx.done;
-
-  return allHistory.map(item => ({
-    ...item,
-    savedAt: item.savedAt ? new Date(item.savedAt) : null,
-  }));
+  return allHistory;
 }
