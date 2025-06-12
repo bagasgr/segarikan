@@ -64,12 +64,18 @@ def check_fish():
     try:
         data = request.get_json()
         image_data = data.get('image')
-        result = {
+
+        if not image_data:
+            return jsonify({"error": "Gambar tidak ditemukan"}), 400
+
+        img_tensor = decode_image(image_data)
+        results = predict_with_models(img_tensor)
+
+        return jsonify({
             "status": "success",
             "message": "Fish checked successfully",
-            "image_length": len(image_data) if image_data else 0
-        }
-        return jsonify(result), 200
+            "result": results
+        }), 200
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
 
@@ -80,12 +86,18 @@ def check_freshness():
     try:
         data = request.get_json()
         image_data = data.get('image')
-        result = {
+
+        if not image_data:
+            return jsonify({"error": "Gambar tidak ditemukan"}), 400
+
+        img_tensor = decode_image(image_data)
+        results = predict_with_models(img_tensor)
+
+        return jsonify({
             "status": "success",
             "message": "Freshness checked successfully",
-            "image_length": len(image_data) if image_data else 0
-        }
-        return jsonify(result), 200
+            "result": results
+        }), 200
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
 
@@ -142,11 +154,10 @@ def get_history():
         {"freshness": "Segar", "actualFreshness": "Tidak Segar"},
     ]
     return jsonify(history_data)
+
 # === REGISTER ROUTES ===
 
-# /api/v1/register → biarkan tetap
 @app.route('/api/v1/register', methods=['POST', 'OPTIONS'])
-# /v1/register → tambahkan supaya frontend bisa pakai BASE_URL yang sekarang
 @app.route('/v1/register', methods=['POST', 'OPTIONS'])
 def register():
     if request.method == 'OPTIONS':
@@ -172,7 +183,7 @@ def register():
         return jsonify({"status": "success", "message": "Registrasi berhasil"}), 201
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
-    
+
 @app.route('/api/v1/login', methods=['POST', 'OPTIONS'])
 @app.route('/v1/login', methods=['POST', 'OPTIONS'])
 def login():
@@ -201,7 +212,6 @@ def login():
         }), 200
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
-
 
 # Main entry point
 if __name__ == '__main__':
