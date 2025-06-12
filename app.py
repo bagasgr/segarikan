@@ -19,6 +19,7 @@ allowed_origins = [
     "http://localhost:9000",
     "http://localhost:9001",
     "https://bagasgr.github.io",
+    "https://segarikan-production.up.railway.app/",
     "https://segarikan-srzk-git-main-bagasgrs-projects.vercel.app"
 ]
 
